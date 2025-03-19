@@ -136,4 +136,69 @@ function GF256Poly(field,  coefficients)
              return new GF256Poly(this.field, product);
          }
      this.multiply2=function( scalar)
-         {
+
+         {if (scalar == 0)
+			{
+				return this.field.Zero;
+			}
+			if (scalar == 1)
+			{
+				return this;
+			}
+			var size = this.coefficients.length;
+			var product = new Array(size);
+			for (var i = 0; i < size; i++)
+			{
+				product[i] = this.field.multiply(this.coefficients[i], scalar);
+			}
+			return new GF256Poly(this.field, product);
+		}
+	this.multiplyByMonomial=function( degree,  coefficient)
+		{
+			if (degree < 0)
+			{
+				throw "System.ArgumentException";
+			}
+			if (coefficient == 0)
+			{
+				return this.field.Zero;
+			}
+			var size = this.coefficients.length;
+			var product = new Array(size + degree);
+			for(var i=0;i<product.length;i++)product[i]=0;
+			for (var i = 0; i < size; i++)
+			{
+				product[i] = this.field.multiply(this.coefficients[i], coefficient);
+			}
+			return new GF256Poly(this.field, product);
+		}
+	this.divide=function( other)
+		{
+			if (this.field!=other.field)
+			{
+				throw "GF256Polys do not have same GF256 field";
+			}
+			if (other.Zero)
+			{
+				throw "Divide by 0";
+			}
+			
+			var quotient = this.field.Zero;
+			var remainder = this;
+			
+			var denominatorLeadingTerm = other.getCoefficient(other.Degree);
+			var inverseDenominatorLeadingTerm = this.field.inverse(denominatorLeadingTerm);
+			
+			while (remainder.Degree >= other.Degree && !remainder.Zero)
+			{
+				var degreeDifference = remainder.Degree - other.Degree;
+				var scale = this.field.multiply(remainder.getCoefficient(remainder.Degree), inverseDenominatorLeadingTerm);
+				var term = other.multiplyByMonomial(degreeDifference, scale);
+				var iterationQuotient = this.field.buildMonomial(degreeDifference, scale);
+				quotient = quotient.addOrSubtract(iterationQuotient);
+				remainder = remainder.addOrSubtract(term);
+			}
+			
+			return new Array(quotient, remainder);
+		}
+}
