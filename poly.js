@@ -87,4 +87,53 @@ function GF256Poly(field,  coefficients)
 			}
 			if (other.Zero)
 			{
-				return this; }
+				return this;
+             }
+             var smallerCoefficients = this.coefficients;
+             var largerCoefficients = other.coefficients;
+             if (smallerCoefficients.length > largerCoefficients.length)
+             {
+                 var temp = smallerCoefficients;
+                 smallerCoefficients = largerCoefficients;
+                 largerCoefficients = temp;
+             }
+             var sumDiff = new Array(largerCoefficients.length);
+             var lengthDiff = largerCoefficients.length - smallerCoefficients.length;
+             // Copy high-order terms only found in higher-degree polynomial's coefficients
+             //Array.Copy(largerCoefficients, 0, sumDiff, 0, lengthDiff);
+             for(var ci=0;ci<lengthDiff;ci++)sumDiff[ci]=largerCoefficients[ci];
+             
+             for (var i = lengthDiff; i < largerCoefficients.length; i++)
+             {
+                 sumDiff[i] = GF256.addOrSubtract(smallerCoefficients[i - lengthDiff], largerCoefficients[i]);
+             }
+             
+             return new GF256Poly(field, sumDiff);
+     }
+     this.multiply1=function( other)
+         {
+             if (this.field!=other.field)
+             {
+                 throw "GF256Polys do not have same GF256 field";
+             }
+             if (this.Zero || other.Zero)
+             {
+                 return this.field.Zero;
+             }
+             var aCoefficients = this.coefficients;
+             var aLength = aCoefficients.length;
+             var bCoefficients = other.coefficients;
+             var bLength = bCoefficients.length;
+             var product = new Array(aLength + bLength - 1);
+             for (var i = 0; i < aLength; i++)
+             {
+                 var aCoeff = aCoefficients[i];
+                 for (var j = 0; j < bLength; j++)
+                 {
+                     product[i + j] = GF256.addOrSubtract(product[i + j], this.field.multiply(aCoeff, bCoefficients[j]));
+                 }
+             }
+             return new GF256Poly(this.field, product);
+         }
+     this.multiply2=function( scalar)
+         {
